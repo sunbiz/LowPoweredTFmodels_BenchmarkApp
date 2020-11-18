@@ -18,6 +18,7 @@ import android.view.MenuItem;
 import android.util.Log;
 import android.widget.Toast;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,6 +31,8 @@ import org.tensorflow.lite.Interpreter;
 
 public class MainActivity extends AppCompatActivity {
   private static final String TAG = "LowPoweredML_Benchmark";
+  private static final int NUM_IMAGES = 100;
+  private static final String XRAY_DIR = "xrayImages";
   private final String MODEL_ASSETS_PATH = "chexnet_pruned_model.tflite";
   private static int toastDuration = Toast.LENGTH_SHORT;
 
@@ -42,45 +45,92 @@ public class MainActivity extends AppCompatActivity {
   }
 
   public void run_chexnet_pruned_quant(View view) throws IOException {
-    runModel("chexnet_pruned_quant.tflite");
+    runTest("chexnet_pruned_quant.tflite");
   }
 
   public void run_chexnet_pruned_model(View view) throws IOException {
-    runModel("chexnet_pruned_model.tflite");
+    runTest("chexnet_pruned_model.tflite");
   }
 
   public void run_chexnet_quant2(View view) throws IOException {
-    runModel("chexnet_quant2.tflite");
+    runTest("chexnet_quant2.tflite");
   }
 
-  public void runModel(String modelName) throws IOException {
+  public void runTest(String modelName) throws IOException {
     Context context = getApplicationContext();
+    float startTime = System.nanoTime();
+    float testTime = 0.0f;
+    float fastestInference = Float.MAX_VALUE;
+    float slowestInference = Float.MIN_VALUE;
 
-    float[][][][] input = loadImage("00000001_000.png");
-    float[][] output = new float[1][14];
-    float time = System.nanoTime();
-    try (Interpreter interpreter =
-           new Interpreter(loadModelFile(modelName))) {
-      Log.d(TAG, "Model loaded: " + MODEL_ASSETS_PATH);
-      interpreter.run(input, output);
-      float runTime = System.nanoTime() - time;
+    String[] xrayList = getAssets().list(XRAY_DIR);
+    if (xrayList != null) {
+      // Run test on all images in directory
+      Toast toast = Toast.makeText(context, "Running test. This can take a few minutes.", toastDuration);
+      int counter = 1;
 
-      CharSequence toastText = "Inference completed in: " + runTime
-                                  + " ns; Result: " + getIndexOfLargest(output[0]);
-      Toast toast = Toast.makeText(context, toastText, toastDuration);
+      for (String xray : xrayList) {
+        toast.show();
+        Log.d(TAG, "Running inference on image: " + xray);
+
+        // Pass image into model, and time the inference
+        float runTime = timeInference(modelName, xray);
+        testTime += runTime;
+        fastestInference = Math.min(fastestInference, runTime);
+        slowestInference = Math.max(slowestInference, runTime);
+
+        // Update user
+        toast = Toast.makeText(context, "Running test. Completed " + counter++ + " / " + NUM_IMAGES, toastDuration);
+        toast.show();
+      }
+
+      // Log stats
+      float endTime = System.nanoTime();
+      Log.d(TAG, "Completed test of " + modelName + " in " + (endTime - startTime) + " ns.");
+      Log.d(TAG, "Average inference time per image: " + (testTime / NUM_IMAGES));
+      Log.d(TAG, "Fastest inference: " + fastestInference + " ns.");
+      Log.d(TAG, "Slowest inference: " + slowestInference + " ns.");
+      toast = Toast.makeText(context,
+                                    "Test completed; avg latency: " + (testTime / NUM_IMAGES),
+                                    Toast.LENGTH_LONG);
       toast.show();
-
-      Log.d(TAG, "Output: " + Arrays.toString(output[0]));
-      Log.d(TAG, "Likeliest index: " + getIndexOfLargest(output[0]));
-      Log.d(TAG, "Inference done in " + runTime + " ns.");
+    } else {
+      Log.d(TAG, "Directory name is not valid");
+      Toast toast = Toast.makeText(context, "Error: No tests were run. See logs", Toast.LENGTH_LONG);
+      toast.show();
     }
   }
 
-  private float[][][][] loadImage(String fileName) {
-    Bitmap bitmap = getBitmapFromAsset(getApplicationContext(), fileName);
+  private float timeInference(String modelName, String image) throws IOException {
+    Context context = getApplicationContext();
+    float[][][][] input = loadImageAsFloatArr(image);
+    float[][] output = new float[1][14];
+    float time = System.nanoTime();
+
+    Interpreter interpreter = new Interpreter(loadTfliteModel(modelName));
+    Log.d(TAG, "Model loaded: " + MODEL_ASSETS_PATH);
+    interpreter.run(input, output);
+    float runTime = System.nanoTime() - time;
+    interpreter.close();
+
+    // Logging and toasts
+    CharSequence toastText = "Inference completed in: " + runTime
+      + " ns; Result: " + getIndexOfLargest(output[0]);
+    Toast toast = Toast.makeText(context, toastText, toastDuration);
+    toast.show();
+    Log.d(TAG, "Output: " + Arrays.toString(output[0]));
+    Log.d(TAG, "Likeliest index: " + getIndexOfLargest(output[0]));
+    Log.d(TAG, "Inference done in " + runTime + " ns.");
+
+    return runTime;
+  }
+
+  private float[][][][] loadImageAsFloatArr(String fileName) {
+    Log.d(TAG, "Loading fileName: " + fileName);
+    Bitmap bitmap = getBitmapFromAsset(getApplicationContext(), XRAY_DIR + "/" + fileName);
     Log.d(TAG, "File loaded: " + bitmap.getWidth() + "x" + bitmap.getHeight());
 
-    bitmap = getResizedBitmap(bitmap, 224, 224);
+    bitmap = resizeBitmap(bitmap, 224, 224);
     Log.d(TAG, "Resized bitmap: " + bitmap.getWidth() + "x" + bitmap.getHeight());
 
     int[] intArray = new int[bitmap.getWidth() * bitmap.getHeight()];
@@ -94,7 +144,6 @@ public class MainActivity extends AppCompatActivity {
       float red = Color.red(pixel) / 255.0F;
       float green = Color.green(pixel) / 255.0F;
       float blue = Color.blue(pixel) / 255.0F;
-//      Log.d(TAG, "red: " + red + " green: " + green + " blue: " + blue);
 
       int xIndex = convert1Dto2D_x(i, bitmap.getWidth());
       int yIndex = convert1Dto2D_y(i, bitmap.getWidth());
@@ -105,11 +154,11 @@ public class MainActivity extends AppCompatActivity {
     return floatArray;
   }
 
-  private static int convert1Dto2D_x (int pix1DIndex, int width) {
+  private static int convert1Dto2D_x(int pix1DIndex, int width) {
     return pix1DIndex / width;
   }
 
-  private static int convert1Dto2D_y (int pix1DIndex, int width) {
+  private static int convert1Dto2D_y(int pix1DIndex, int width) {
     return pix1DIndex % width;
   }
 
@@ -126,7 +175,7 @@ public class MainActivity extends AppCompatActivity {
     return bitmap;
   }
 
-  private MappedByteBuffer loadModelFile(String modelName) throws IOException {
+  private MappedByteBuffer loadTfliteModel(String modelName) throws IOException {
     Context context = getApplicationContext();
     AssetFileDescriptor assetFileDescriptor = context.getAssets().openFd(modelName);
     FileInputStream fileInputStream =
@@ -137,7 +186,7 @@ public class MainActivity extends AppCompatActivity {
     return fileChannel.map(FileChannel.MapMode.READ_ONLY, startoffset, declaredLength);
   }
 
-  public Bitmap getResizedBitmap(Bitmap bm, int newHeight, int newWidth) {
+  public Bitmap resizeBitmap(Bitmap bm, int newHeight, int newWidth) {
     int width = bm.getWidth();
     int height = bm.getHeight();
     float scaleWidth = ((float) newWidth) / width;
@@ -160,6 +209,10 @@ public class MainActivity extends AppCompatActivity {
     return true;
   }
 
+  /**
+   * Since the model returns a float[14] array, get the index with the highest probability
+   * diagnosis.
+   **/
   public int getIndexOfLargest(float[] array) {
     if (array == null || array.length == 0) {
       return -1;
@@ -170,7 +223,7 @@ public class MainActivity extends AppCompatActivity {
         largest = i;
       }
     }
-    return largest; // position of the first largest found
+    return largest; // if duplicates, position of the first largest found
   }
 
   @Override
