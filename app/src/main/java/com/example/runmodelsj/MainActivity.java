@@ -2,9 +2,12 @@ package com.example.runmodelsj;
 
 import android.content.Context;
 import android.content.res.AssetFileDescriptor;
+import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.Matrix;
+import android.media.Image;
 import android.os.Bundle;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -22,6 +25,7 @@ import android.widget.Toast;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -36,98 +40,129 @@ public class MainActivity extends AppCompatActivity {
   private static int toastDuration = Toast.LENGTH_SHORT;
 
   @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.activity_main);
+    Toolbar toolbar = findViewById(R.id.toolbar);
+    setSupportActionBar(toolbar);
+  }
+
+  public void run_chexnet_pruned_quant(View view) throws IOException {
+    runModel("chexnet_pruned_quant.tflite");
+  }
+
+  public void run_chexnet_pruned_model(View view) throws IOException {
+    runModel("chexnet_pruned_model.tflite");
+  }
+
+  public void runModel(String modelName) throws IOException {
+    Context context = getApplicationContext();
+
+    float[][][][] input = loadImage("00000001_000.png");
+    float[][] output = new float[1][14];
+    float time = System.nanoTime();
+    try (Interpreter interpreter =
+           new Interpreter(loadModelFile(modelName))) {
+      Log.d(TAG, "Model loaded: " + MODEL_ASSETS_PATH);
+      interpreter.run(input, output);
+      float runTime = System.nanoTime() - time;
+
+      CharSequence toastText = "Inference completed in: " + runTime
+                                  + " ns; Result: " + getIndexOfLargest(output[0]);
+      Toast toast = Toast.makeText(context, toastText, toastDuration);
+      toast.show();
+
+      Log.d(TAG, "Output: " + Arrays.toString(output[0]));
+      Log.d(TAG, "Likeliest index: " + getIndexOfLargest(output[0]));
+      Log.d(TAG, "Inference done in " + runTime + " ns.");
     }
+  }
 
-    public void runPerformanceTest(View view) throws IOException {
-      Context context = getApplicationContext();
-      // Just a null input for now
-      float[][][][] input = new float[1][224][224][3];
-//      int[] input = loadImage("00000001_000.png");
+  private float[][][][] loadImage(String fileName) throws IOException {
+    Bitmap bitmap = getBitmapFromAsset(getApplicationContext(), fileName);
+    Log.d(TAG, "File loaded: " + bitmap.getWidth() + "x" + bitmap.getHeight());
 
-      float[][] output = new float[1][14];
-      float time = System.nanoTime();
-      try (Interpreter interpreter =
-             new Interpreter(loadModelFile("chexnet_pruned_quant.tflite"))) {
-        Log.d(TAG, "Model loaded: " + MODEL_ASSETS_PATH);
-        interpreter.run(input, output);
-        interpreter.close();
-        float runTime = System.nanoTime() - time;
+    bitmap = getResizedBitmap(bitmap, 224, 224);
+    Log.d(TAG, "Resized bitmap: " + bitmap.getWidth() + "x" + bitmap.getHeight());
 
-        CharSequence toastText = "Inference completed in: " + runTime + " ns";
-        Toast toast = Toast.makeText(context, toastText, toastDuration);
-        toast.show();
+    int[] intArray = new int[bitmap.getWidth() * bitmap.getHeight()];
+    // Get all pixels and store in int array
+    bitmap.getPixels(intArray, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
 
-        Log.d(TAG, "Inference done in " + runTime + " ns.");
-        Log.d(TAG, "Output: " + Arrays.toString(output[0]));
-        Log.d(TAG, "Likeliest index: " + getIndexOfLargest(output[0]));
-      }
+    float[][][][] floatArray = new float[1][224][224][3];
+    // Convert hexadecimal int array to RGB float array
+    for (int i = 0; i < intArray.length; i++) {
+      int pixel = intArray[i];
+      float red = Color.red(pixel) / 255.0F;
+      float green = Color.green(pixel) / 255.0F;
+      float blue = Color.blue(pixel) / 255.0F;
+//      Log.d(TAG, "red: " + red + " green: " + green + " blue: " + blue);
+
+      int xIndex = convert1Dto2D_x(i, bitmap.getWidth());
+      int yIndex = convert1Dto2D_y(i, bitmap.getWidth());
+      floatArray[0][xIndex][yIndex][0] = red;
+      floatArray[0][xIndex][yIndex][1] = green;
+      floatArray[0][xIndex][yIndex][2] = blue;
     }
+    return floatArray;
+  }
 
-    private int[] loadImage(String fileName) throws IOException {
-      Bitmap bitmap = BitmapFactory.decodeStream(getAssets().open(fileName));
-      for (int i = 0; i < 10; i++) {
-        Log.d(TAG, "sample int pixel: " + bitmap.getPixel(i, i));
-      }
-      bitmap = getResizedBitmap(bitmap, 224, 224);
-      int x = bitmap.getWidth();
-      int y = bitmap.getHeight();
-      int[] intArray = new int[x * y];
-      bitmap.getPixels(intArray, 0, x, 0, 0, 224, 224);
-      for (int i = 0; i < 10; i++) {
-        Log.d(TAG, "sample int pixel: " + intArray[i]);
-      }
-      return intArray;
+  private static int convert1Dto2D_x (int pix1DIndex, int width) {
+    return pix1DIndex / width;
+  }
+
+  private static int convert1Dto2D_y (int pix1DIndex, int width) {
+    return pix1DIndex % width;
+  }
+
+  public static Bitmap getBitmapFromAsset(Context context, String filePath) {
+    AssetManager assetManager = context.getAssets();
+    InputStream istr;
+    Bitmap bitmap = null;
+    try {
+      istr = assetManager.open(filePath);
+      bitmap = BitmapFactory.decodeStream(istr);
+    } catch (IOException e) {
+      Log.e(TAG, "Could not decode stream from " + filePath);
     }
+    return bitmap;
+  }
 
-    private float[][][][] convertIntArrayToInputDims(int[] intArray) {
-      // Input intArray should be int[224 * 224]
-      float[][][][] floatArr = new float[1][224][224][3];
-      for (int pixVal : intArray) {
+  private MappedByteBuffer loadModelFile(String modelName) throws IOException {
+    Context context = getApplicationContext();
+    AssetFileDescriptor assetFileDescriptor = context.getAssets().openFd(modelName);
+    FileInputStream fileInputStream =
+      new FileInputStream(assetFileDescriptor.getFileDescriptor());
+    FileChannel fileChannel = fileInputStream.getChannel();
+    long startoffset = assetFileDescriptor.getStartOffset();
+    long declaredLength = assetFileDescriptor.getDeclaredLength();
+    return fileChannel.map(FileChannel.MapMode.READ_ONLY, startoffset, declaredLength);
+  }
 
-      }
-      return floatArr;
-    }
+  public Bitmap getResizedBitmap(Bitmap bm, int newHeight, int newWidth) {
+    int width = bm.getWidth();
+    int height = bm.getHeight();
+    float scaleWidth = ((float) newWidth) / width;
+    float scaleHeight = ((float) newHeight) / height;
 
-    private MappedByteBuffer loadModelFile(String modelName) throws IOException {
-      Context context = getApplicationContext();
-      AssetFileDescriptor assetFileDescriptor = context.getAssets().openFd(modelName);
-      FileInputStream fileInputStream =
-        new FileInputStream(assetFileDescriptor.getFileDescriptor());
-      FileChannel fileChannel = fileInputStream.getChannel();
-      long startoffset = assetFileDescriptor.getStartOffset();
-      long declaredLength = assetFileDescriptor.getDeclaredLength();
-      return fileChannel.map(FileChannel.MapMode.READ_ONLY, startoffset, declaredLength);
-    }
+    // Create a matrix for the manipulation
+    Matrix matrix = new Matrix();
 
-    public Bitmap getResizedBitmap(Bitmap bm, int newHeight, int newWidth) {
-      int width = bm.getWidth();
-      int height = bm.getHeight();
-      float scaleWidth = ((float) newWidth) / width;
-      float scaleHeight = ((float) newHeight) / height;
+    // Resize the bit map
+    matrix.postScale(scaleWidth, scaleHeight);
 
-      // Create a matrix for the manipulation
-      Matrix matrix = new Matrix();
+    // Recreate the new Bitmap
+    Bitmap resizedBitmap = Bitmap.createBitmap(bm, 0, 0, width, height, matrix, false);
+    return resizedBitmap;
 
-      // Resize the bit map
-      matrix.postScale(scaleWidth, scaleHeight);
+  }
 
-      // Recreate the new Bitmap
-      Bitmap resizedBitmap = Bitmap.createBitmap(bm, 0, 0, width, height, matrix, false);
-      return resizedBitmap;
-
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
+  @Override
+  public boolean onCreateOptionsMenu(Menu menu) {
+    // Inflate the menu; this adds items to the action bar if it is present.
+    getMenuInflater().inflate(R.menu.menu_main, menu);
+    return true;
+  }
 
   public int getIndexOfLargest(float[] array) {
     if (array == null || array.length == 0) {
@@ -142,18 +177,18 @@ public class MainActivity extends AppCompatActivity {
     return largest; // position of the first largest found
   }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
+  @Override
+  public boolean onOptionsItemSelected(MenuItem item) {
+    // Handle action bar item clicks here. The action bar will
+    // automatically handle clicks on the Home/Up button, so long
+    // as you specify a parent activity in AndroidManifest.xml.
+    int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
+    //noinspection SimplifiableIfStatement
+    if (id == R.id.action_settings) {
+      return true;
     }
+
+    return super.onOptionsItemSelected(item);
+  }
 }
