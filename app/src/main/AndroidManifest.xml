@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.runmodelsj">
+    package="com.example.tflitemodelbenchmarking">
 
     <application
         android:allowBackup="true"
@@ -10,7 +10,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.RunModelsJ">
         <activity
-            android:name=".MainActivity"
+            android:name="com.example.tflitemodelbenchmarking.MainActivity"
             android:label="@string/app_name"
             android:theme="@style/Theme.RunModelsJ.NoActionBar">
             <intent-filter>

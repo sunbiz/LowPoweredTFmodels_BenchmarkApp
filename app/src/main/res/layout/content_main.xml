@@ -43,4 +43,17 @@
     app:layout_constraintEnd_toEndOf="parent"
     app:layout_constraintStart_toStartOf="parent"
     app:layout_constraintTop_toBottomOf="@+id/button" />
+
+  <Button
+    android:id="@+id/button3"
+    android:layout_width="251dp"
+    android:layout_height="86dp"
+    android:layout_marginTop="156dp"
+    android:onClick="run_chexnet_quant2"
+    android:text="Run CHEXNET_QUANT2 test"
+    app:backgroundTint="#03A9F4"
+    app:layout_constraintEnd_toEndOf="parent"
+    app:layout_constraintHorizontal_bias="0.481"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintTop_toBottomOf="@+id/button" />
 </androidx.constraintlayout.widget.ConstraintLayout>
