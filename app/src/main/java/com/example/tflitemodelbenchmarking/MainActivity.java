@@ -36,7 +36,6 @@ public class MainActivity extends AppCompatActivity {
     runTest("chexnet_pruned_model.tflite");
     runTest("chexnet_quant.tflite");
     runTest("chexnet_pruned_quant.tflite");
-
   }
 
   public void run_chexnet_pruned_quant(View view) throws IOException {
