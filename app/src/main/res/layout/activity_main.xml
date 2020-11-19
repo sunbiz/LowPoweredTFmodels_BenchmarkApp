@@ -13,13 +13,14 @@
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <include layout="@layout/content_main" />
+  <include layout="@layout/content_main" />
 
   <androidx.appcompat.widget.Toolbar
     android:id="@+id/toolbar"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="?attr/colorPrimary"
-    app:popupTheme="@style/Theme.RunModelsJ.PopupOverlay" />
+    android:background="@color/teal_700"
+    app:popupTheme="@style/Theme.RunModelsJ.PopupOverlay"
+    app:titleTextColor="#FFFFFF" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
