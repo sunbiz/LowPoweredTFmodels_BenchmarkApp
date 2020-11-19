@@ -6,6 +6,5 @@
     <string name="next">Next</string>
     <string name="previous">Previous</string>
 
-    <string name="hello_first_fragment">The tests below will run 100 X-Ray inferences with each model.</string>
-    <string name="hello_second_fragment">Hello second fragment. </string>
+    <string name="hello_first_fragment">Each test below will run 100 X-Ray inferences with each model.</string>
 </resources>
