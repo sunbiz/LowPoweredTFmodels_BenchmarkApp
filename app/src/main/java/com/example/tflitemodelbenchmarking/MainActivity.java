@@ -6,10 +6,12 @@ import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
+import android.os.PowerManager;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.util.Log;
+import android.view.WindowManager;
 import android.widget.Toast;
 
 import java.io.IOException;
@@ -20,8 +22,9 @@ import org.tensorflow.lite.Interpreter;
 public class MainActivity extends AppCompatActivity {
   private static final String TAG = "TFliteModelBenchmarking";
   private static final String XRAY_DIR = "xrayImages";
-  private static int numImages;
-  private static int toastDuration = Toast.LENGTH_SHORT;
+  private static final int toastDuration = Toast.LENGTH_SHORT;
+  private static PowerManager.WakeLock wakeLock;
+
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -29,12 +32,16 @@ public class MainActivity extends AppCompatActivity {
     setContentView(R.layout.activity_main);
     Toolbar toolbar = findViewById(R.id.toolbar);
     setSupportActionBar(toolbar);
+    getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+    PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+    wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
+      "Benchmarking::RunPerformanceTest");
   }
 
   public void run_all(View view) throws IOException {
-    runTest("chexnet_quant2.tflite");
     runTest("chexnet_pruned_model.tflite");
     runTest("chexnet_quant.tflite");
+    runTest("chexnet_quant2.tflite");
     runTest("chexnet_pruned_quant.tflite");
   }
 
@@ -55,32 +62,37 @@ public class MainActivity extends AppCompatActivity {
   }
 
   public void runTest(String modelName) throws IOException {
-    Context context = getApplicationContext();
+    wakeLock.acquire(10*60*1000L /*10 minutes*/);
+
+    Context context = getBaseContext();
     float startTime = System.nanoTime();
     float testTime = 0.0f;
     float minLatency = Float.MAX_VALUE;
     float maxLatency = Float.MIN_VALUE;
 
+    Toast toast = Toast.makeText(context,
+                                    "Test started; avg latency: ",
+                                    Toast.LENGTH_LONG);
+
     String[] xrayList = getAssets().list(XRAY_DIR);
-    numImages = xrayList.length;
-    if (xrayList != null) {
+    int numImages = xrayList.length;
+    if (numImages > 0) {
       // Run test on all images in directory
-      CharSequence toastText = "Running test. This can take a few minutes.";
-      Toast toast = Toast.makeText(context, toastText, toastDuration);
+//      Toast toast = Toast.makeText(context, "Running test. This can take a few minutes.", Toast.LENGTH_LONG);
       toast.show();
       int counter = 1;
 
       for (String xray : xrayList) {
-        Log.v(TAG, "Running inference on image: " + xray);
-        // Pass image into model, time the inference, and close the model
-        float runTime = timeInference(modelName, xray);
-        testTime += runTime;
-        minLatency = Math.min(minLatency, runTime);
-        maxLatency = Math.max(maxLatency, runTime);
+//        Log.v(TAG, "Running inference on image: " + xray);
+//        // Pass image into model, time the inference, and close the model
+//        float runTime = timeInference(modelName, xray);
+//        testTime += runTime;
+//        minLatency = Math.min(minLatency, runTime);
+//        maxLatency = Math.max(maxLatency, runTime);
 
         // Update user
-//        toast = Toast.makeText(context, "Running test. Completed " + counter++ + " / " + numImages, toastDuration);
-//        toast.show();
+        toast = Toast.makeText(context, "Running test. Completed " + counter++ + " / " + numImages, toastDuration);
+        toast.show();
       }
 
       // Log stats
@@ -92,12 +104,13 @@ public class MainActivity extends AppCompatActivity {
 //      toast = Toast.makeText(context,
 //                                    "Test completed; avg latency: " + (testTime / numImages),
 //                                    Toast.LENGTH_LONG);
-//      toast.show();
+      toast.show();
     } else {
-      Log.e(TAG, "Directory name is not valid");
+      Log.e(TAG, "No files found. Tests not run.");
 //      Toast toast = Toast.makeText(context, "Error: No tests were run. See logs", Toast.LENGTH_LONG);
 //      toast.show();
     }
+    wakeLock.release();
   }
 
   private float timeInference(String modelName, String image) throws IOException {

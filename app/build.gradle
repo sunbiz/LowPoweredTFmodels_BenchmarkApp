@@ -7,7 +7,7 @@ android {
     buildToolsVersion "30.0.2"
 
     defaultConfig {
-        applicationId "com.example.runmodelsj"
+        applicationId "com.example.tflitemodelbenchmarking"
         minSdkVersion 16
         targetSdkVersion 29
         versionCode 1
