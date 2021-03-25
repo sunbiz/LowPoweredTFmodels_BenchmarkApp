@@ -20,20 +20,21 @@ public class Utils {
   private static final String XRAY_DIR = "xrayImages";
 
   public static MappedByteBuffer loadTfliteModel(Context context, String modelName) throws IOException {
+    Log.v(TAG, "modelname: " + modelName);
     AssetFileDescriptor assetFileDescriptor = context.getAssets().openFd(modelName);
     FileInputStream fileInputStream =
       new FileInputStream(assetFileDescriptor.getFileDescriptor());
     FileChannel fileChannel = fileInputStream.getChannel();
     long startoffset = assetFileDescriptor.getStartOffset();
     long declaredLength = assetFileDescriptor.getDeclaredLength();
-    Log.v(TAG, "loadTfliteModel: startOffset: " + startoffset + " declaredLength: " + declaredLength);
     return fileChannel.map(FileChannel.MapMode.READ_ONLY, startoffset, declaredLength);
+//    return fileChannel.map(FileChannel.MapMode.READ_WRITE, startoffset, declaredLength);
   }
 
   /**
    * This method loads an image from assets, converts the bitmap to an int[], and then converts that
    * to a float[][][][] to pass into the model. Each value in the int[] is separated into 3 R,G,B
-   * values. The output should always be
+   * values.
    *
    * @param fileName this image can be any size, will be resized to 224x224
    *
@@ -42,10 +43,7 @@ public class Utils {
   public static float[][][][] loadImageAsFloatArr(Context context, String fileName) {
     Log.v(TAG, "Loading fileName: " + fileName);
     Bitmap bitmap = Utils.getBitmapFromAsset(context, XRAY_DIR + "/" + fileName);
-    Log.v(TAG, "File loaded: " + bitmap.getWidth() + "x" + bitmap.getHeight());
-
     bitmap = resizeBitmap(bitmap, 224, 224);
-    Log.v(TAG, "Resized bitmap: " + bitmap.getWidth() + "x" + bitmap.getHeight());
 
     int[] intArray = new int[bitmap.getWidth() * bitmap.getHeight()];
     // Get all pixels and store in int array
