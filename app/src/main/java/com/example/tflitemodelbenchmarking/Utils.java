@@ -68,6 +68,34 @@ public class Utils {
     return floatArray;
   }
 
+  public static byte[][][][] loadImageAsByteArr(Context context, String fileName) {
+    Log.v(TAG, "Loading fileName: " + fileName);
+    Bitmap bitmap = Utils.getBitmapFromAsset(context, XRAY_DIR + "/" + fileName);
+    bitmap = resizeBitmap(bitmap, 224, 224);
+
+    int[] intArray = new int[bitmap.getWidth() * bitmap.getHeight()];
+    // Get all pixels and store in int array
+    bitmap.getPixels(intArray, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
+
+    byte[][][][] byteArray = new byte[1][224][224][3];
+    // Convert hexadecimal int array to RGB float array
+    for (int i = 0; i < intArray.length; i++) {
+      int pixel = intArray[i];
+      byte red = ((byte) Color.red(pixel));
+      byte green = ((byte) Color.green(pixel));
+      byte blue = ((byte) Color.blue(pixel));
+
+      int xIndex = Utils.convert1Dto2D_x(i, bitmap.getWidth());
+      int yIndex = Utils.convert1Dto2D_y(i, bitmap.getWidth());
+      byteArray[0][xIndex][yIndex][0] = red;
+      byteArray[0][xIndex][yIndex][1] = green;
+      byteArray[0][xIndex][yIndex][2] = blue;
+    }
+    bitmap.recycle();
+
+    return byteArray;
+  }
+
   public static Bitmap getBitmapFromAsset(Context context, String filePath) {
     AssetManager assetManager = context.getAssets();
     InputStream istr;
@@ -108,9 +136,25 @@ public class Utils {
   }
 
   /**
-   * Since the model returns a float[14] array, get the index with the highest probability.
+   * From model output, which is a float[14] array, get the index with the highest probability.
    **/
-  public static int getIndexOfLargest(float[] array) {
+  public static int getIndexOfLargestFloat(float[] array) {
+    if (array == null || array.length == 0) {
+      return -1;
+    }
+    int largest = 0;
+    for (int i = 1; i < array.length; i++) {
+      if (array[i] > array[largest]) {
+        largest = i;
+      }
+    }
+    return largest; // if duplicates, position of the first largest found
+  }
+
+  /**
+   * From model output, which is an int[14] array, get the index with the highest probability.
+   **/
+  public static int getIndexOfLargestByte(byte[] array) {
     if (array == null || array.length == 0) {
       return -1;
     }
