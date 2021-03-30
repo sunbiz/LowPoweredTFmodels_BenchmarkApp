@@ -23,83 +23,20 @@
     app:navGraph="@navigation/nav_graph" />
 
   <Button
-    android:id="@+id/button4"
-    android:layout_width="300dp"
-    android:layout_height="50dp"
-    android:layout_marginTop="16dp"
-    android:onClick="run_chexnet_quant"
-    android:text="Test CHEXNET_QUANT"
-    app:backgroundTint="#00BCD4"
-    app:layout_constraintEnd_toEndOf="parent"
-    app:layout_constraintHorizontal_bias="0.495"
-    app:layout_constraintStart_toStartOf="parent"
-    app:layout_constraintTop_toBottomOf="@+id/button3" />
-
-  <Button
-    android:id="@+id/button2"
-    android:layout_width="300dp"
-    android:layout_height="50dp"
-    android:layout_marginTop="20dp"
-    android:onClick="run_chexnet_pruned_model"
-    android:text="Test CHEXNET_PRUNED_MODEL"
-    app:backgroundTint="#00BCD4"
-    app:layout_constraintEnd_toEndOf="parent"
-    app:layout_constraintHorizontal_bias="0.513"
-    app:layout_constraintStart_toStartOf="parent"
-    app:layout_constraintTop_toBottomOf="@+id/button" />
-
-  <Button
-    android:id="@+id/button3"
-    android:layout_width="300dp"
-    android:layout_height="50dp"
-    android:layout_marginTop="20dp"
-    android:onClick="run_chexnet_quant2"
-    android:text="Test CHEXNET_QUANT2"
-    app:backgroundTint="#00BCD4"
-    app:layout_constraintEnd_toEndOf="parent"
-    app:layout_constraintHorizontal_bias="0.513"
-    app:layout_constraintStart_toStartOf="parent"
-    app:layout_constraintTop_toBottomOf="@+id/button2" />
-
-  <Button
     android:id="@+id/button5"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
+    android:layout_width="256dp"
+    android:layout_height="120dp"
+    android:layout_marginBottom="288dp"
     android:clickable="true"
     android:onClick="run_all"
     android:text="Run All"
+    android:textSize="30sp"
     app:backgroundTint="#4CAF50"
     app:layout_constraintBottom_toBottomOf="@+id/nav_host_fragment"
     app:layout_constraintEnd_toEndOf="parent"
-    app:layout_constraintHorizontal_bias="0.501"
+    app:layout_constraintHorizontal_bias="0.496"
     app:layout_constraintStart_toStartOf="parent"
-    app:layout_constraintTop_toBottomOf="@+id/button4"
-    app:layout_constraintVertical_bias="0.254" />
-
-  <Button
-    android:id="@+id/button"
-    android:layout_width="300dp"
-    android:layout_height="50dp"
-    android:layout_marginTop="20dp"
-    android:onClick="run_chexnet_pruned_quant"
-    android:text="Test chexnet_pruned_quant"
-    app:backgroundTint="#00BCD4"
-    app:layout_constraintEnd_toEndOf="parent"
-    app:layout_constraintHorizontal_bias="0.495"
-    app:layout_constraintStart_toStartOf="parent"
-    app:layout_constraintTop_toBottomOf="@+id/button6" />
-
-  <Button
-    android:id="@+id/button6"
-    android:layout_width="300dp"
-    android:layout_height="50dp"
-    android:layout_marginTop="250dp"
-    android:onClick="run_baseline"
-    android:text="Test Baseline"
-    app:backgroundTint="#00BCD4"
-    app:layout_constraintEnd_toEndOf="parent"
-    app:layout_constraintHorizontal_bias="0.495"
-    app:layout_constraintStart_toStartOf="parent"
-    app:layout_constraintTop_toTopOf="@+id/nav_host_fragment" />
+    app:layout_constraintTop_toTopOf="parent"
+    app:layout_constraintVertical_bias="1.0" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -8,12 +8,12 @@
 
   <TextView
     android:id="@+id/textview_first"
-    android:layout_width="300dp"
-    android:layout_height="101dp"
-    android:text="@string/hello_first_fragment"
+    android:layout_width="338dp"
+    android:layout_height="154dp"
+    android:text="@string/home_screen_text"
     android:textAppearance="@style/TextAppearance.AppCompat.Large"
     android:textColor="#3E3E3E"
-    android:textSize="24sp"
+    android:textSize="30sp"
     app:layout_constraintBottom_toBottomOf="parent"
     app:layout_constraintEnd_toEndOf="parent"
     app:layout_constraintStart_toStartOf="parent"
