@@ -91,8 +91,8 @@ public class MainActivity extends AppCompatActivity {
 
       // Log stats
       float endTimeMs = SystemClock.uptimeMillis();
-      avgTimePerImage = testTime / numImages;
-      Log.d(TAG, "Completed test of " + label + " Model in " + (endTimeMs - testStartTimeMs) + " ms on " + numImages + " images.");
+      avgTimePerImage = testTime / (numImages * numIterations);
+      Log.d(TAG, "Completed test of " + label + " Model in " + (endTimeMs - testStartTimeMs) + " ms on " + (numImages * numIterations) + " images.");
       Log.d(TAG, "Average inference time per image: " + avgTimePerImage + " for model: " + modelName);
       Log.d(TAG, "Min latency: " + minLatency + " ms.");
       Log.d(TAG, "Max latency: " + maxLatency + " ms.");

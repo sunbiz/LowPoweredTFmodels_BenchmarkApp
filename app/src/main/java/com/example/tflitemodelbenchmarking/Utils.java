@@ -41,7 +41,7 @@ public class Utils {
    * @return float[1][224][224][3]
    * **/
   public static float[][][][] loadImageAsFloatArr(Context context, String fileName) {
-    Log.v(TAG, "Loading fileName: " + fileName);
+//    Log.v(TAG, "Loading fileName: " + fileName);
     Bitmap bitmap = Utils.getBitmapFromAsset(context, XRAY_DIR + "/" + fileName);
     bitmap = resizeBitmap(bitmap, 224, 224);
 
