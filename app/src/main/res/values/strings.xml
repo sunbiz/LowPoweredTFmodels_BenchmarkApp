@@ -8,4 +8,5 @@
 
     <string name="home_screen_text">Each test below will run 25 X-Ray inferences with the baseline and compressed models. </string>
   <string name="results_will_appear_here_avg_time_img">Results (avg time / img) will appear here after all tests are complete. Please allow a few minutes. \n </string>
+  <string name="results_on_rerunning_tests">Rerunning tests. Results (avg time / img) will appear here after all tests are complete. Please allow a few minutes. \n </string>
 </resources>

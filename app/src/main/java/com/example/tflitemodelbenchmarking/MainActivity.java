@@ -29,6 +29,7 @@ public class MainActivity extends AppCompatActivity {
   private static String[] labels = {"Atelectasis", "Cardiomegaly", "Effusion", "Infiltration",
     "Mass", "Nodule", "Pneumonia", "Pneumothorax", "Consolidation", "Edema", "Emphysema",
     "Fibrosis", "Pleural_Thickening", "Hernia"};
+  private int runCount = 1;
 
   // Initialize interpreter with GPU delegate
   Interpreter.Options options = new Interpreter.Options();
@@ -47,8 +48,12 @@ public class MainActivity extends AppCompatActivity {
   }
 
   public void run_all(View view) throws IOException {
-    int numIterations = 1;
+    // Reset text if necessary
+    TextView resultsBox = (TextView) findViewById(R.id.resultsView);
+    resultsBox.setText(R.string.results_on_rerunning_tests);
+    resultsBox.append("\nTest #" + runCount++);
 
+    int numIterations = 1; // Increase this to get a more accurate result
     runTestNTimes("chexnet_kaggle_tflite_no_quantization.tflite", numIterations, MODEL_TYPE.FLOAT_MODEL, "Baseline");
     runTestNTimes("QAT_int_8_v1.tflite", numIterations, MODEL_TYPE.FLOAT_MODEL, "Quant-Aware Int8");
     runTestNTimes("chexnet_kaggle_tflite_dynamic_quantization.tflite", numIterations, MODEL_TYPE.FLOAT_MODEL, "Dynamic Quant");
