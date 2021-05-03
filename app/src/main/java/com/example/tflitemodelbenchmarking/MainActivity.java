@@ -50,13 +50,15 @@ public class MainActivity extends AppCompatActivity {
   public void run_all(View view) throws IOException {
     // Reset text if necessary
     TextView resultsBox = (TextView) findViewById(R.id.resultsView);
-    resultsBox.setText(R.string.results_on_rerunning_tests);
+    resultsBox.setText(R.string.results_will_appear_here_avg_time_img);
     resultsBox.append("\nTest #" + runCount++);
 
     int numIterations = 1; // Increase this to get a more accurate result
     runTestNTimes("chexnet_kaggle_tflite_no_quantization.tflite", numIterations, MODEL_TYPE.FLOAT_MODEL, "Baseline");
-    runTestNTimes("QAT_int_8_v1.tflite", numIterations, MODEL_TYPE.FLOAT_MODEL, "Quant-Aware Int8");
-    runTestNTimes("chexnet_kaggle_tflite_dynamic_quantization.tflite", numIterations, MODEL_TYPE.FLOAT_MODEL, "Dynamic Quant");
+    runTestNTimes("QAT_int_8_v1.tflite", numIterations, MODEL_TYPE.FLOAT_MODEL, "QAT Int8");
+    runTestNTimes("chexnet_kaggle_tflite_dynamic_quantization.tflite", numIterations, MODEL_TYPE.FLOAT_MODEL, "DynQuant");
+    runTestNTimes("chexnet_kaggle_tflite_fp16.tflite", numIterations, MODEL_TYPE.FLOAT_MODEL, "FP16");
+
     Log.d(TAG, "Done with all tests.");
   }
 
@@ -67,6 +69,7 @@ public class MainActivity extends AppCompatActivity {
     float testStartTimeMs = SystemClock.uptimeMillis();
     float testTime = 0.0f;
     float avgTimePerImage;
+    float totalTestTime;
     float minLatency = Float.MAX_VALUE;
     float maxLatency = Float.MIN_VALUE;
 
@@ -92,14 +95,15 @@ public class MainActivity extends AppCompatActivity {
       // Log stats
       float endTimeMs = SystemClock.uptimeMillis();
       avgTimePerImage = testTime / (numImages * numIterations);
-      Log.d(TAG, "Completed test of " + label + " Model in " + (endTimeMs - testStartTimeMs) + " ms on " + (numImages * numIterations) + " images.");
+      totalTestTime = endTimeMs - testStartTimeMs;
+      Log.d(TAG, "Completed test of " + label + " Model in " + totalTestTime + " ms on " + (numImages * numIterations) + " images.");
       Log.d(TAG, "Average inference time per image: " + avgTimePerImage + " for model: " + modelName);
       Log.d(TAG, "Min latency: " + minLatency + " ms.");
       Log.d(TAG, "Max latency: " + maxLatency + " ms.");
     }
     wakeLock.release();
     TextView resultsBox = (TextView) findViewById(R.id.resultsView);
-    resultsBox.append("\n" + label + ": " + avgTimePerImage + " ms" + "\n");
+    resultsBox.append("\n" + label + ": " + avgTimePerImage + " ms; " + totalTestTime + " total" + "\n");
     return avgTimePerImage;
   }
 
@@ -113,7 +117,7 @@ public class MainActivity extends AppCompatActivity {
 //      Log.d(TAG, "Delegate IS supported on this device");
 //    } else {
       // if the GPU is not supported, run on 4 threads
-//      options.setNumThreads(4);
+      options.setNumThreads(2);
 //      Log.d(TAG, "Delegate is NOT supported on this device");
 //    }
 
@@ -133,6 +137,7 @@ public class MainActivity extends AppCompatActivity {
     if (modelType == MODEL_TYPE.INT_MODEL) {
       byte[][][][] inputByte = Utils.loadImageAsByteArr(getApplicationContext(), image);
       byte[][] outputByte = new byte[1][14];
+//      interpreter.resizeInput(0, [4, 1, 224, 224, 3]);
       interpreter.run(inputByte, outputByte);
 //      Log.v(TAG, "Output: " + Arrays.toString(outputByte[0]));
 //      Log.v(TAG, "Likeliest label: " + labels[Utils.getIndexOfLargestByte(outputByte[0])]);
