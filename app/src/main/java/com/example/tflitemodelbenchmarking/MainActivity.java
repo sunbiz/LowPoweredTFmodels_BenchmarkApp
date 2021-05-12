@@ -18,6 +18,8 @@ import android.widget.TextView;
 import java.io.IOException;
 
 import org.tensorflow.lite.Interpreter;
+import org.tensorflow.lite.gpu.CompatibilityList;
+import org.tensorflow.lite.gpu.GpuDelegate;
 
 public class MainActivity extends AppCompatActivity {
   private static final String TAG = "TFliteModelBenchmarking";
@@ -106,18 +108,19 @@ public class MainActivity extends AppCompatActivity {
   }
 
   private float timeInference(String modelName, String image, MODEL_TYPE modelType) throws IOException {
-//    // Set interpreter options for CPU/GPU
-//    if(compatList.isDelegateSupportedOnThisDevice()){
-//      // if the device has a supported GPU, add the GPU delegate
-//      GpuDelegate.Options delegateOptions = compatList.getBestOptionsForThisDevice();
-//      GpuDelegate gpuDelegate = new GpuDelegate(delegateOptions);
-//      options.addDelegate(gpuDelegate);
-//      Log.d(TAG, "Delegate IS supported on this device");
-//    } else {
+
+    Interpreter.Options options = new Interpreter.Options();
+    CompatibilityList compatList = new CompatibilityList();
+
+    if(compatList.isDelegateSupportedOnThisDevice()){
+      // if the device has a supported GPU, add the GPU delegate
+      GpuDelegate.Options delegateOptions = compatList.getBestOptionsForThisDevice();
+      GpuDelegate gpuDelegate = new GpuDelegate(delegateOptions);
+      options.addDelegate(gpuDelegate);
+    } else {
       // if the GPU is not supported, run on 4 threads
-      options.setNumThreads(2);
-//      Log.d(TAG, "Delegate is NOT supported on this device");
-//    }
+      options.setNumThreads(4);
+    }
 
     // Initialize interpreter and load model
     Interpreter interpreter;
