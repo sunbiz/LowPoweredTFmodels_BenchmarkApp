@@ -18,8 +18,6 @@ import android.widget.TextView;
 import java.io.IOException;
 
 import org.tensorflow.lite.Interpreter;
-//import org.tensorflow.lite.gpu.CompatibilityList;
-//import org.tensorflow.lite.gpu.GpuDelegate;
 
 public class MainActivity extends AppCompatActivity {
   private static final String TAG = "TFliteModelBenchmarking";
@@ -98,8 +96,8 @@ public class MainActivity extends AppCompatActivity {
       totalTestTime = endTimeMs - testStartTimeMs;
       Log.d(TAG, "Completed test of " + label + " Model in " + totalTestTime + " ms on " + (numImages * numIterations) + " images.");
       Log.d(TAG, "Average inference time per image: " + avgTimePerImage + " for model: " + modelName);
-      Log.d(TAG, "Min latency: " + minLatency + " ms.");
-      Log.d(TAG, "Max latency: " + maxLatency + " ms.");
+      Log.v(TAG, "Min latency: " + minLatency + " ms.");
+      Log.v(TAG, "Max latency: " + maxLatency + " ms.");
     }
     wakeLock.release();
     TextView resultsBox = (TextView) findViewById(R.id.resultsView);
@@ -137,16 +135,11 @@ public class MainActivity extends AppCompatActivity {
     if (modelType == MODEL_TYPE.INT_MODEL) {
       byte[][][][] inputByte = Utils.loadImageAsByteArr(getApplicationContext(), image);
       byte[][] outputByte = new byte[1][14];
-//      interpreter.resizeInput(0, [4, 1, 224, 224, 3]);
       interpreter.run(inputByte, outputByte);
-//      Log.v(TAG, "Output: " + Arrays.toString(outputByte[0]));
-//      Log.v(TAG, "Likeliest label: " + labels[Utils.getIndexOfLargestByte(outputByte[0])]);
     } else {
       float[][][][] inputFloat = Utils.loadImageAsFloatArr(getApplicationContext(), image);
       float[][] outputFloat = new float[1][14];
       interpreter.run(inputFloat, outputFloat);
-//      Log.v(TAG, "Output: " + Arrays.toString(outputFloat[0]));
-//      Log.v(TAG, "Likeliest label: " + labels[Utils.getIndexOfLargestFloat(outputFloat[0])]);
     }
 
     // Log inference result and clean up
